@@ -1,4 +1,4 @@
-#include "scraper.hpp"
+#include "parser.hpp"
 
 #include <ranges>
 #include <regex>
@@ -137,7 +137,7 @@ std::string GetId(const std::map<std::string, std::string>& attributes) {
     return "";
 }
 
-scraper::HTMLElement ParseAttributes(const std::string& token) {
+parser::HTMLElement ParseAttributes(const std::string& token) {
     std::string tokenCpy = token;
     if (auto pos = tokenCpy.find("</"); pos != std::string::npos)
         tokenCpy = tokenCpy.replace(pos, 2, "");
@@ -156,7 +156,7 @@ scraper::HTMLElement ParseAttributes(const std::string& token) {
     // 2. tagname class="cl1 cl2 cl3-a cl3_b" id="test" asd zzxc d-ata-tag="2"
     auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[^ ]+=\"[^\"]*\"|[^ ]+" });
 
-    scraper::HTMLElement newElement("");
+    parser::HTMLElement newElement("");
 
     if (attributes.size() > 0) {
         newElement.tag = attributes.at(0);
@@ -174,14 +174,14 @@ scraper::HTMLElement ParseAttributes(const std::string& token) {
     return newElement;
 }
 
-scraper::HTMLElement scraper::ParseHTML(const std::string& htmlString) {
-    scraper::HTMLElement document("document");
-    scraper::HTMLElement* current = &document;
+parser::HTMLElement parser::ParseHTML(const std::string& htmlString) {
+    parser::HTMLElement document("document");
+    parser::HTMLElement* current = &document;
 
     for (const std::string& token : CreateTokenArray(htmlString)) {
         switch (ParseToTokenType(token)) {
             case TokenType::OPEN: {
-                scraper::HTMLElement newElement = ParseAttributes(token);
+                parser::HTMLElement newElement = ParseAttributes(token);
                 newElement.parent = current;
                 current->children.push_back(newElement);
                 current = &current->children.at(current->children.size() - 1);
@@ -191,13 +191,13 @@ scraper::HTMLElement scraper::ParseHTML(const std::string& htmlString) {
                 current = current->parent;
                 break;
             case TokenType::NO_CLOSING: {
-                scraper::HTMLElement newElement = ParseAttributes(token);
+                parser::HTMLElement newElement = ParseAttributes(token);
                 newElement.parent = current;
                 current->children.push_back(newElement);
                 break;
             }
             case TokenType::NO_TAG: {
-                scraper::HTMLElement newElement("");
+                parser::HTMLElement newElement("");
                 newElement.inner = token;
                 newElement.parent = current;
                 current->children.push_back(newElement);
@@ -211,12 +211,12 @@ scraper::HTMLElement scraper::ParseHTML(const std::string& htmlString) {
     return document;
 }
 
-scraper::HTMLElement::HTMLElement(const std::string& tag) {
+parser::HTMLElement::HTMLElement(const std::string& tag) {
     this->tag = tag;
 }
 
-std::vector<scraper::HTMLElement*> RecursiveGetElementsByClassname(scraper::HTMLElement* element, const std::string& className) {
-    std::vector<scraper::HTMLElement*> elements;
+std::vector<parser::HTMLElement*> RecursiveGetElementsByClassname(parser::HTMLElement* element, const std::string& className) {
+    std::vector<parser::HTMLElement*> elements;
 
     for (auto& child : element->children) {
         if (std::ranges::find(child.classList, className) != child.classList.end())
@@ -230,7 +230,7 @@ std::vector<scraper::HTMLElement*> RecursiveGetElementsByClassname(scraper::HTML
     return elements;
 }
 
-scraper::HTMLElement* RecursiveGetElementById(scraper::HTMLElement* element, const std::string& id) {
+parser::HTMLElement* RecursiveGetElementById(parser::HTMLElement* element, const std::string& id) {
     for (auto& child : element->children) {
         if (child.id == id)
             return &child;
@@ -242,10 +242,10 @@ scraper::HTMLElement* RecursiveGetElementById(scraper::HTMLElement* element, con
     return nullptr;
 }
 
-scraper::HTMLElement* scraper::HTMLElement::GetElementById(std::string idName) {
+parser::HTMLElement* parser::HTMLElement::GetElementById(std::string idName) {
     return RecursiveGetElementById(this, idName);
 }
 
-std::vector<scraper::HTMLElement *> scraper::HTMLElement::GetElementsByClassname(const std::string& className) {
+std::vector<parser::HTMLElement *> parser::HTMLElement::GetElementsByClassname(const std::string& className) {
     return RecursiveGetElementsByClassname(this, className);
 }

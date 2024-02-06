@@ -1,11 +1,11 @@
-#ifndef __SCRAPER_HPP__
-#define __SCRAPER_HPP__
+#ifndef __PARSER_HPP__
+#define __PARSER_HPP__
 
 #include <string>
 #include <vector>
 #include <map>
 
-namespace scraper {
+namespace parser {
     class HTMLElement {
     public:
         std::string tag;
@@ -23,6 +23,6 @@ namespace scraper {
     };
 
     HTMLElement ParseHTML(const std::string& htmlString);
-}; // scraper
+}; // parser
 
-#endif // __SCRAPER_HPP__
+#endif // __PARSER_HPP__
