@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <optional>
 
 namespace parser {
     class HTMLElement {
@@ -14,11 +15,11 @@ namespace parser {
         std::vector<HTMLElement> children;
         std::vector<std::string> classList;
         std::string id;
-        HTMLElement* parent;
+        std::optional<HTMLElement*> parent;
 
         HTMLElement(const std::string& tag);
 
-        HTMLElement* GetElementById(std::string idName);
+        std::optional<HTMLElement*> GetElementById(std::string idName);
         std::vector<HTMLElement*> GetElementsByClassname(const std::string& className);
     };
 

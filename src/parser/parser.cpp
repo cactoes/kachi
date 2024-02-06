@@ -188,7 +188,7 @@ parser::HTMLElement parser::ParseHTML(const std::string& htmlString) {
                 break;
             }
             case TokenType::CLOSE:
-                current = current->parent;
+                current = current->parent.value();
                 break;
             case TokenType::NO_CLOSING: {
                 parser::HTMLElement newElement = ParseAttributes(token);
@@ -242,8 +242,13 @@ parser::HTMLElement* RecursiveGetElementById(parser::HTMLElement* element, const
     return nullptr;
 }
 
-parser::HTMLElement* parser::HTMLElement::GetElementById(std::string idName) {
-    return RecursiveGetElementById(this, idName);
+std::optional<parser::HTMLElement*> parser::HTMLElement::GetElementById(std::string idName) {
+    parser::HTMLElement* element = RecursiveGetElementById(this, idName);
+
+    if (!element)
+        return std::nullopt;
+
+    return element;
 }
 
 std::vector<parser::HTMLElement *> parser::HTMLElement::GetElementsByClassname(const std::string& className) {
