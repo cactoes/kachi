@@ -153,8 +153,8 @@ scraper::HTMLElement ParseAttributes(const std::string& token) {
     // https://regex101.com/
     // test strings:
     // 1. !DOCTYPE HTML
-    // 2. tagname class="cl1 cl2" id="test" asd zzxc d-ata-tag="2"
-    auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[\\w-]+=\"[\\w\\s]*\"|[\\w!]+" });
+    // 2. tagname class="cl1 cl2 cl3-a cl3_b" id="test" asd zzxc d-ata-tag="2"
+    auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[^ ]+=\"[^\"]*\"|[^ ]+" });
 
     scraper::HTMLElement newElement("");
 
