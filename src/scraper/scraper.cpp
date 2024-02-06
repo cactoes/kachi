@@ -81,7 +81,7 @@ std::vector<std::string> Split(const std::string& s, const std::string& delimite
         res.push_back (token);
     }
 
-    res.push_back (s.substr (pos_start));
+    res.push_back (s.substr(pos_start));
     return res;
 }
 
@@ -150,8 +150,11 @@ scraper::HTMLElement ParseAttributes(const std::string& token) {
         tokenCpy = tokenCpy.replace(pos, 1, "");
 
 
-    // split the string on spaces unless its in quotes
-    auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[\\w-]+=\"[\\w\\s]*\"|\\w+" });
+    // https://regex101.com/
+    // test strings:
+    // 1. !DOCTYPE HTML
+    // 2. tagname class="cl1 cl2" id="test" asd zzxc d-ata-tag="2"
+    auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[\\w-]+=\"[\\w\\s]*\"|[\\w!]+" });
 
     scraper::HTMLElement newElement("");
 
