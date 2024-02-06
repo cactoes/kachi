@@ -18,7 +18,7 @@ namespace scraper {
 
         HTMLElement(const std::string& tag);
 
-        HTMLElement* GetElementById(std::string id);
+        HTMLElement* GetElementById(std::string idName);
         std::vector<HTMLElement*> GetElementsByClassname(const std::string& className);
     };
 

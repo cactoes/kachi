@@ -242,8 +242,8 @@ scraper::HTMLElement* RecursiveGetElementById(scraper::HTMLElement* element, con
     return nullptr;
 }
 
-scraper::HTMLElement* scraper::HTMLElement::GetElementById(std::string id) {
-    return RecursiveGetElementById(this, id);
+scraper::HTMLElement* scraper::HTMLElement::GetElementById(std::string idName) {
+    return RecursiveGetElementById(this, idName);
 }
 
 std::vector<scraper::HTMLElement *> scraper::HTMLElement::GetElementsByClassname(const std::string& className) {
