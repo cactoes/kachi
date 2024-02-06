@@ -155,6 +155,7 @@ parser::HTMLElement ParseAttributes(const std::string& token) {
     // 1. !DOCTYPE HTML
     // 2. tagname class="cl1 cl2 cl3-a cl3_b" id="test" asd zzxc d-ata-tag="2"
     auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[^ ]+=\"[^\"]*\"|[^ ]+" });
+    // auto attributes = Split(tokenCpy, " ");
 
     parser::HTMLElement newElement("");
 
@@ -164,7 +165,7 @@ parser::HTMLElement ParseAttributes(const std::string& token) {
         for (size_t i = 1; i < attributes.size(); i++) {
             const auto& attrib = attributes.at(i);
             if (attrib != " " && !attrib.empty())
-                newElement.attributes.insert(ParseAttributeValue(attrib));
+                newElement.attributes.emplace(ParseAttributeValue(attrib));
         }
     }
 
@@ -184,7 +185,7 @@ parser::HTMLElement parser::ParseHTML(const std::string& htmlString) {
                 parser::HTMLElement newElement = ParseAttributes(token);
                 newElement.parent = current;
                 current->children.push_back(newElement);
-                current = &current->children.at(current->children.size() - 1);
+                current = &current->children.back();
                 break;
             }
             case TokenType::CLOSE:
@@ -215,14 +216,14 @@ parser::HTMLElement::HTMLElement(const std::string& tag) {
     this->tag = tag;
 }
 
-std::vector<parser::HTMLElement*> RecursiveGetElementsByClassname(parser::HTMLElement* element, const std::string& className) {
+std::vector<parser::HTMLElement*> RecursiveGetElementsByClassName(parser::HTMLElement* element, const std::string& className) {
     std::vector<parser::HTMLElement*> elements;
 
     for (auto& child : element->children) {
         if (std::ranges::find(child.classList, className) != child.classList.end())
             elements.push_back(&child);
 
-        auto possibleNestedElemets = RecursiveGetElementsByClassname(&child, className);
+        auto possibleNestedElemets = RecursiveGetElementsByClassName(&child, className);
         if (!possibleNestedElemets.empty())
             elements.insert(elements.end(), possibleNestedElemets.begin(), possibleNestedElemets.end());
     }
@@ -251,6 +252,25 @@ std::optional<parser::HTMLElement*> parser::HTMLElement::GetElementById(std::str
     return element;
 }
 
-std::vector<parser::HTMLElement *> parser::HTMLElement::GetElementsByClassname(const std::string& className) {
-    return RecursiveGetElementsByClassname(this, className);
+std::vector<parser::HTMLElement*> parser::HTMLElement::GetElementsByClassName(const std::string& className) {
+    return RecursiveGetElementsByClassName(this, className);
+}
+
+std::vector<parser::HTMLElement*> RecursiveGetElementsByTagName(parser::HTMLElement* element, const std::string& tagName) {
+    std::vector<parser::HTMLElement*> elements;
+
+    for (auto& child : element->children) {
+        if (child.tag == tagName)
+            elements.push_back(&child);
+
+        auto possibleNestedElemets = RecursiveGetElementsByTagName(&child, tagName);
+        if (!possibleNestedElemets.empty())
+            elements.insert(elements.end(), possibleNestedElemets.begin(), possibleNestedElemets.end());
+    }
+
+    return elements;
+}
+
+std::vector<parser::HTMLElement*> parser::HTMLElement::GetElementsByTagName(const std::string& tagName) {
+    return std::vector<HTMLElement*>();
 }

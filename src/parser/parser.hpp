@@ -20,7 +20,8 @@ namespace parser {
         HTMLElement(const std::string& tag);
 
         std::optional<HTMLElement*> GetElementById(std::string idName);
-        std::vector<HTMLElement*> GetElementsByClassname(const std::string& className);
+        std::vector<HTMLElement*> GetElementsByClassName(const std::string& className);
+        std::vector<HTMLElement*> GetElementsByTagName(const std::string& tagName);
     };
 
     HTMLElement ParseHTML(const std::string& htmlString);
