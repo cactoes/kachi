@@ -1,5 +1,7 @@
 #include "scraper.hpp"
-#include <iostream>
+
+#include <ranges>
+#include <regex>
 
 std::vector<std::string> CreateTokenArray(const std::string& htmlString) {
     std::vector<std::string> tokenArray;
@@ -51,6 +53,7 @@ bool IsVoidElement(const std::string& token) {
     if (token.starts_with("<source")) return true;
     if (token.starts_with("<track")) return true;
     if (token.starts_with("<wbr")) return true;
+    if (token.starts_with("<!")) return true;
     return false;
 }
 
@@ -82,21 +85,56 @@ std::vector<std::string> Split(const std::string& s, const std::string& delimite
     return res;
 }
 
+std::vector<std::string> SplitRegex(const std::string& s, const std::regex& sep_regex) {
+    std::sregex_token_iterator iter(s.begin(), s.end(), sep_regex, -1);
+    std::sregex_token_iterator end;
+    return { iter, end };
+}
+
+std::vector<std::string> MatchAllRegex(const std::string& input, const std::regex& pattern) {
+    std::vector<std::string> matches;
+    std::sregex_iterator iter(input.begin(), input.end(), pattern);
+    std::sregex_iterator end;
+
+    while (iter != end) {
+        matches.push_back(iter->str());
+        ++iter;
+    }
+
+    return matches;
+}
+
 void ReplaceAll(std::string& str, const std::string& value, const std::string& replaceValue = "") {
     size_t pos;
     while ((pos = str.find(value)) != std::string::npos)
         str = str.replace(pos, value.size(), replaceValue);
 }
 
-scraper::HTMLAttribute ParseAttributeValue(const std::string& attrib) {
+std::pair<std::string, std::string> ParseAttributeValue(const std::string& attrib) {
     std::vector<std::string> attribParts = Split(attrib, "=");
 
     if (attribParts.size() < 2ull)
-        return scraper::HTMLAttribute { .key = attribParts.at(0), .value = "" };
+        return { attribParts.at(0), "" };
 
     ReplaceAll(attribParts.at(1), "\"");
     
-    return scraper::HTMLAttribute { .key = attribParts.at(0), .value = attribParts.at(1) };
+    return { attribParts.at(0), attribParts.at(1) };
+}
+
+std::vector<std::string> GetClassList(const std::map<std::string, std::string>& attributes) {
+    std::vector<std::string> classList;
+
+    if (attributes.contains("class"))
+        classList = Split(attributes.at("class"), " ");
+
+    return classList;
+}
+
+std::string GetId(const std::map<std::string, std::string>& attributes) {
+    if (attributes.contains("id"))
+        return attributes.at("id");
+
+    return "";
 }
 
 scraper::HTMLElement ParseAttributes(const std::string& token) {
@@ -112,16 +150,23 @@ scraper::HTMLElement ParseAttributes(const std::string& token) {
         tokenCpy = tokenCpy.replace(pos, 1, "");
 
 
-    auto attributes = Split(tokenCpy, " ");
+    // split the string on spaces unless its in quotes
+    auto attributes = MatchAllRegex(tokenCpy, std::regex{ "[\\w-]+=\"[\\w\\s]*\"|\\w+" });
 
-    // BUG: if no attrib 0 we crash
-    scraper::HTMLElement newElement(attributes.at(0));
+    scraper::HTMLElement newElement("");
 
-    for (size_t i = 1; i < attributes.size(); i++) {
-        const auto& attrib = attributes.at(i);
-        if (attrib != " " && !attrib.empty())
-            newElement.attributes.push_back(ParseAttributeValue(attrib));
+    if (attributes.size() > 0) {
+        newElement.tag = attributes.at(0);
+
+        for (size_t i = 1; i < attributes.size(); i++) {
+            const auto& attrib = attributes.at(i);
+            if (attrib != " " && !attrib.empty())
+                newElement.attributes.insert(ParseAttributeValue(attrib));
+        }
     }
+
+    newElement.classList = GetClassList(newElement.attributes);
+    newElement.id = GetId(newElement.attributes);
 
     return newElement;
 }
@@ -165,4 +210,39 @@ scraper::HTMLElement scraper::ParseHTML(const std::string& htmlString) {
 
 scraper::HTMLElement::HTMLElement(const std::string& tag) {
     this->tag = tag;
+}
+
+std::vector<scraper::HTMLElement*> RecursiveGetElementsByClassname(scraper::HTMLElement* element, const std::string& className) {
+    std::vector<scraper::HTMLElement*> elements;
+
+    for (auto& child : element->children) {
+        if (std::ranges::find(child.classList, className) != child.classList.end())
+            elements.push_back(&child);
+
+        auto possibleNestedElemets = RecursiveGetElementsByClassname(&child, className);
+        if (!possibleNestedElemets.empty())
+            elements.insert(elements.end(), possibleNestedElemets.begin(), possibleNestedElemets.end());
+    }
+
+    return elements;
+}
+
+scraper::HTMLElement* RecursiveGetElementById(scraper::HTMLElement* element, const std::string& id) {
+    for (auto& child : element->children) {
+        if (child.id == id)
+            return &child;
+
+        if (auto e = RecursiveGetElementById(&child, id))
+            return e;
+    }
+
+    return nullptr;
+}
+
+scraper::HTMLElement* scraper::HTMLElement::GetElementById(std::string id) {
+    return RecursiveGetElementById(this, id);
+}
+
+std::vector<scraper::HTMLElement *> scraper::HTMLElement::GetElementsByClassname(const std::string& className) {
+    return RecursiveGetElementsByClassname(this, className);
 }
