@@ -23,6 +23,9 @@ public:
     }
 
     bool operator<(const Time& time) const {
+        if (m_year < time.m_year)
+            return true;
+
         if (m_month < time.m_month)
             return true;
 
@@ -38,13 +41,16 @@ public:
 private:
     void SetTime(time_t time) {
         struct tm* ptm = gmtime(&time);
-        m_hour = (ptm->tm_hour + 1) % 24;
-        m_minute = ptm->tm_min;
+
+        m_year = ptm->tm_year + 1900;
         m_month = ptm->tm_mon;
         m_day = ptm->tm_mday;
+        m_hour = (ptm->tm_hour + 1) % 24;
+        m_minute = ptm->tm_min;
     }
 
 public:
+    int m_year = 0;
     int m_month = 0;
     int m_day = 0;
     int m_hour = 0;
