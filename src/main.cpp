@@ -1,14 +1,13 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <httplib.h>
 #include <iostream>
+#include <codecvt>
 
 #include "parser/parser.hpp"
 #include "time.hpp"
 
-#include <codecvt>
-
 #pragma warning( push )
-#pragma warning( disable : 4996 )
+#pragma warning( disable : _UCRT_DISABLED_WARNINGS )
 std::wstring StringToWideString(const std::string& str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.from_bytes(str);

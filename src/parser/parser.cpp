@@ -272,5 +272,5 @@ std::vector<parser::HTMLElement*> RecursiveGetElementsByTagName(parser::HTMLElem
 }
 
 std::vector<parser::HTMLElement*> parser::HTMLElement::GetElementsByTagName(const std::wstring& tagName) {
-    return std::vector<HTMLElement*>();
+    return RecursiveGetElementsByTagName(this, tagName);
 }
