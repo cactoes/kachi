@@ -1,40 +1,61 @@
-#include <iostream>
-
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <httplib.h>
+#include <iostream>
 
-#include <chrono>
+#include "parser/parser.hpp"
+#include "time.hpp"
 
-#include "scraper/scraper.hpp"
+struct AnimeEntry {
+    Time m_time;
+    std::string m_episode;
+    std::string m_title;
+};
 
-// #define WEBSITE_TEST
-
-int main() {
-#ifdef WEBSITE_TEST
+parser::HTMLElement GetPage() {
     httplib::Client client("https://www.livechart.me");
-    auto res = client.Get("/timetable");
+    httplib::Result res = client.Get("/timetable");
+    return parser::ParseHTML(res->body);
+}
 
-    scraper::HTMLElement document = scraper::ParseHTML(res->body);
+std::vector<AnimeEntry> GetTodaysReleases(parser::HTMLElement& document) {
+    auto elements = document.GetElementsByClassName("timetable-day");
 
-    auto elements = document.GetElementsByClassname("timetable-day");
+    std::vector<AnimeEntry> entries;
 
-#else
-    std::string testHTML =
-        "<hmtl>"
-            "<head>"
-               "<link rel=\"dns-prefetch\" href=\"https://s.livechart.me\">"
-            "</head>"
-            "<body>"
-                "<p id=\"testId\">"
-                    "Test"
-                "</p>"
-                "<input class=\"hide button\" type=\"checkbox\" name=\"rewatching\" data-mark-filter-modal-target=\"checkbox\" />"
-            "</body>"
-        "</hmtl>";
+    if (elements.size() < 2)
+        return entries;
 
-    scraper::HTMLElement document = scraper::ParseHTML(testHTML);
-    auto elements = document.GetElementById("testId");
+    for (const auto& element : elements.at(1)->GetElementsByClassName("timetable-timeslot")) {
+        auto time = Time(element->attributes.at("data-timestamp"));
 
-#endif
+        entries.push_back({
+            .m_time = time,
+            .m_episode = element->GetElementsByClassName("footer").at(0)->children.at(1).inner,
+            .m_title = element->GetElementsByClassName("title").at(0)->attributes.at("title")
+        });
+    }
+
+    return entries;
+}
+
+int main(int, char**) {
+    auto document = GetPage();
+    auto entries = GetTodaysReleases(document);
+
+    std::cout << "[ https://www.livechart.me/timetable ]\n";
+
+    bool hasPrintCurrentTime = false;
+
+    auto now = Time();
+
+    for (const auto& entry : entries) {
+        if (!hasPrintCurrentTime && now < entry.m_time) {
+            hasPrintCurrentTime = true;
+            std::cout << "\033[3m-- " << now.m_day << " " << now.MonthToString() << " " << now.ToStringHM() << " --\033[23m\n";
+        }
+
+        std::cout << "[" << entry.m_time.ToStringHM() << "] " << std::left << std::setw(6) << entry.m_episode << "- " << entry.m_title << "\n";
+    }
+
     return 0;
 }
