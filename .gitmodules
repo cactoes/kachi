@@ -1,3 +1,6 @@
 [submodule "lib/cpp-httplib"]
 	path = lib/cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib.git
+[submodule "lib/cpp-html-parser"]
+	path = lib/cpp-html-parser
+	url = https://github.com/cactoes/cpp-html-parser.git

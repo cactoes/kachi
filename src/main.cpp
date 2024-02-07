@@ -2,8 +2,8 @@
 #include <httplib.h>
 #include <iostream>
 #include <codecvt>
+#include <htmlparser.hpp>
 
-#include "parser/parser.hpp"
 #include "time.hpp"
 
 #pragma warning( push )
@@ -64,6 +64,9 @@ int main(int, char**) {
 
         std::wcout << L"[" << entry.m_time.ToStringHM() << L"] " << std::left << std::setw(6) << entry.m_episode << L"- " << entry.m_title << L"\n";
     }
+
+    if (!hasPrintCurrentTime)
+        std::wcout << L"\033[3m-- " << now.m_day << L" " << now.MonthToString() << L" " << now.ToStringHM() << L" --\033[23m\n";
 
     return 0;
 }
