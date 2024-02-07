@@ -13,7 +13,7 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
 
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /D "_MBCS")
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /D "_UNICODE")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oxs")
     set(CMAKE_CXX20_STANDARD_COMPILE_OPTION "-std:c++20")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

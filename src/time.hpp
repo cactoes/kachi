@@ -9,31 +9,31 @@ public:
         SetTime(time(nullptr));
     }
 
-    Time(const std::string& epoch) {
+    Time(const std::wstring& epoch) {
         SetTime((time_t)std::stoll(epoch));
     }
 
-    std::string ToStringHM() const {
-        return (m_hour < 10 ? "0" : "") + std::to_string(m_hour) + ":" + (m_minute < 10 ? "0" : "") + std::to_string(m_minute);
+    std::wstring ToStringHM() const {
+        return (m_hour < 10 ? L"0" : L"") + std::to_wstring(m_hour) + L":" + (m_minute < 10 ? L"0" : L"") + std::to_wstring(m_minute);
     }
 
-    std::string MonthToString() const {
-        static const std::vector<std::string> months = { "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "dec" };
+    std::wstring MonthToString() const {
+        static const std::vector<std::wstring> months = { L"jan", L"feb", L"mar", L"apr", L"may", L"jun", L"jul", L"aug", L"sep", L"oct", L"dec" };
         return months.at(m_month);
     }
 
     bool operator<(const Time& time) const {
-        if (m_year < time.m_year)
-            return true;
+        if (m_year > time.m_year)
+            return false;
 
-        if (m_month < time.m_month)
-            return true;
+        if (m_month > time.m_month)
+            return false;
 
-        if (m_day < time.m_day)
-            return true;
+        if (m_day > time.m_day)
+            return false;
 
-        if (m_hour < time.m_hour)
-            return true;
+        if (m_hour > time.m_hour)
+            return false;
 
         return m_minute < time.m_minute;
     }
