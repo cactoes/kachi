@@ -6,6 +6,10 @@
 #include <sstream>
 #include <htmlparser.hpp>
 
+#ifdef _WIN32
+#include "Windows.h"
+#endif
+
 #include "time.hpp"
 
 #pragma warning( push )
@@ -102,6 +106,14 @@ void DrawCursor(const Time& currentTime) {
 }
 
 int main(int argc, char** argv) {
+#ifdef _WIN32
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD originalConsoleMode = 0;
+
+    // enable colors
+    (void)GetConsoleMode(console, &originalConsoleMode);
+    (void)SetConsoleMode(console, originalConsoleMode | (DWORD)ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+#endif
     (void)_setmode(_fileno(stdout), _O_U16TEXT);
 
     std::wcout << L"[ https://www.livechart.me/timetable | kachi ]\n";
@@ -127,6 +139,9 @@ int main(int argc, char** argv) {
     auto content = LiveChartScraper::GetRawPageContentForDay(currentTime);
     if (content.empty()) {
         std::wcout << "Failed to get data";
+#ifdef _WIN32
+        (void)SetConsoleMode(console, originalConsoleMode);
+#endif
         return 0;
     }
 
@@ -150,6 +165,10 @@ int main(int argc, char** argv) {
 
     if (!hasPrintCurrentTime)
         DrawCursor(currentTime);
+
+#ifdef _WIN32
+    (void)SetConsoleMode(console, originalConsoleMode);
+#endif
 
     return 0;
 }
