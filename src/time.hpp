@@ -38,19 +38,19 @@ public:
     }
 
     bool operator<(const Time& time) const {
-        if (m_year <= time.m_year)
+        if (m_year < time.m_year)
             return true;
 
-        if (m_month <= time.m_month)
+        if (m_month < time.m_month)
             return true;
 
-        if (m_day <= time.m_day)
+        if (m_day < time.m_day)
             return true;
 
-        if (m_hour <= time.m_hour)
+        if (m_hour < time.m_hour)
             return true;
 
-        if (m_minute <= time.m_minute)
+        if (m_minute < time.m_minute)
             return true;
 
         return false;
