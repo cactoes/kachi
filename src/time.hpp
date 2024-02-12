@@ -2,6 +2,8 @@
 #define __TIME_HPP__
 
 #include <time.h>
+#include <string>
+#include <vector>
 
 #define NOW Time()
 
@@ -11,26 +13,22 @@ public:
         SetTime(time(nullptr));
     }
 
-    Time(const std::wstring& epoch) {
+    Time(const std::string& epoch) {
         SetTime((time_t)std::stoll(epoch));
     }
 
-    std::wstring ToStringHM() const {
-        return (m_hour < 10 ? L"0" : L"") + std::to_wstring(m_hour) + L":" + (m_minute < 10 ? L"0" : L"") + std::to_wstring(m_minute);
+    std::string ToStringHM() const {
+        return (m_hour < 10 ? "0" : "") + std::to_string(m_hour) + ":" + (m_minute < 10 ? "0" : "") + std::to_string(m_minute);
     }
 
-    std::wstring MonthToString() const {
-        static const std::vector<std::wstring> months = { L"jan", L"feb", L"mar", L"apr", L"may", L"jun", L"jul", L"aug", L"sep", L"oct", L"nov", L"dec" };
+    std::string MonthToString() const {
+        static const std::vector<std::string> months = { "jan", "feb", "mar", "apr", "may", "jun", "ju", "aug", "sep", "oct", "nov", "dec" };
         return months.at(m_month);
     }
 
-    std::wstring WeekDayToString() const {
-        static const std::vector<std::wstring> days = { L"sun", L"mon", L"tue", L"wen", L"thu", L"fri", L"sat" };
+    std::string WeekDayToString() const {
+        static const std::vector<std::string> days = { "sun", "mon", "tue", "wen", "thu", "fri", "sat" };
         return days.at(m_wday);
-    }
-
-    std::wstring ToYearMonthDayString(const std::wstring& seperator) const {
-        return std::to_wstring(m_year) + seperator + std::to_wstring(m_month + 1) + seperator + std::to_wstring(m_day);
     }
 
     std::string ToYearMonthDayString(const std::string& seperator) const {

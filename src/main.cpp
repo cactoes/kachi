@@ -12,23 +12,16 @@
 
 #include "time.hpp"
 
-#pragma warning( push )
-#pragma warning( disable : _UCRT_DISABLED_WARNINGS )
-std::wstring StringToWideString(const std::string& str) {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.from_bytes(str);
-}
-#pragma warning( pop )
-
 namespace LiveChartScraper {
-    std::wstring GetRawPageContentForDay(const Time& time) {
+    std::string GetRawPageContentForDay(const Time& time) {
         httplib::Client client("https://www.livechart.me");
         auto result = client.Get("/timetable?date=" + time.ToYearMonthDayString("-"));
 
         if (result->status != 200)
-            return L"";
+            return "";
 
-        return StringToWideString(result->body);
+        // return StringToWideString(result->body);
+        return result->body;
     }
 
     enum class AnimeEntryType {
@@ -38,44 +31,44 @@ namespace LiveChartScraper {
 
     struct AnimeEntry {
         Time m_time;
-        std::wstring m_episode;
-        std::wstring m_title;
-        std::wstring m_message;
+        std::string m_episode;
+        std::string m_title;
+        std::string m_message;
         AnimeEntryType m_type;
     };
 
-    std::vector<AnimeEntry> GetEntriesFor(const std::wstring& content, size_t day) {
+    std::vector<AnimeEntry> GetEntriesFor(const std::string& content, size_t day) {
         auto document = parser::ParseHTML(content);
-        auto elements = document.GetElementsByClassName(L"timetable-day");
+        auto elements = document.GetElementsByClassName("timetable-day");
 
         std::vector<AnimeEntry> entries;
 
         if (elements.size() < 1)
             return entries;
 
-        for (const auto& element : elements.at(day)->GetElementsByClassName(L"timetable-timeslot")) {
+        for (const auto& element : elements.at(day)->GetElementsByClassName("timetable-timeslot")) {
             AnimeEntry entry;
-            entry.m_time = Time(element->attributes.at(L"data-timestamp"));
+            entry.m_time = Time(element->attributes.at("data-timestamp"));
 
-            bool isTypeMessage = !element->GetElementsByClassName(L"timetable-timeslot__note").empty();
+            bool isTypeMessage = !element->GetElementsByClassName("timetable-timeslot__note").empty();
             if (isTypeMessage) {
                 entry.m_type = AnimeEntryType::MESSAGE;
 
-                for (const auto& child : element->GetElementsByTagName(L"p").at(0)->children) {
+                for (const auto& child : element->GetElementsByTagName("p").at(0)->children) {
                     if (child.children.empty()) {
                         entry.m_message += child.inner;
                     } else {
-                        entry.m_message += L"\033[3m\033[1m" + child.children.at(0).inner + L"\033[22m\033[23m";
+                        entry.m_message += "\033[3m\033[1m" + child.children.at(0).inner + "\033[22m\033[23m";
                     }
                 }
 
             } else {
-                if (!element->GetElementsByClassName(L"footer").empty()) {
-                    entry.m_episode = element->GetElementsByClassName(L"footer").at(0)->children.at(1).inner;
-                    entry.m_title = element->GetElementsByClassName(L"title").at(0)->children.at(0).inner;
+                if (!element->GetElementsByClassName("footer").empty()) {
+                    entry.m_episode = element->GetElementsByClassName("footer").at(0)->children.at(1).inner;
+                    entry.m_title = element->GetElementsByClassName("title").at(0)->children.at(0).inner;
                     entry.m_type = AnimeEntryType::BASIC;
                 } else {
-                    entry.m_message = element->GetElementsByTagName(L"p").at(0)->children.at(0).inner;
+                    entry.m_message = element->GetElementsByTagName("p").at(0)->children.at(0).inner;
                     entry.m_type = AnimeEntryType::MESSAGE;
                 }
             }
@@ -86,14 +79,14 @@ namespace LiveChartScraper {
         return entries;
     }
 
-    std::wstring FormatEntry(const AnimeEntry& entry) {
-        std::wstringstream ss;
+    std::string FormatEntry(const AnimeEntry& entry) {
+        std::stringstream ss;
         switch (entry.m_type) {
             case AnimeEntryType::BASIC:
-                ss << L"[" << entry.m_time.ToStringHM() << L"] [" << std::left << std::setw(6) << entry.m_episode << L"] " << entry.m_title;
+                ss << "[" << entry.m_time.ToStringHM() << "] [" << std::left << std::setw(6) << entry.m_episode << "] " << entry.m_title;
                 return ss.str();
             case AnimeEntryType::MESSAGE:
-                ss << L"-- " << entry.m_message << L" (" + entry.m_time.ToStringHM() + L") --";
+                ss << "-- " << entry.m_message << " (" + entry.m_time.ToStringHM() + ") --";
                 return ss.str();
             default:
                 return ss.str();
@@ -102,7 +95,7 @@ namespace LiveChartScraper {
 }; // namespace LiveChartScraper
 
 void DrawCursor(const Time& currentTime) {
-    std::wcout << L"\033[3m-- " << currentTime.WeekDayToString() << " " << currentTime.m_day << L" " << currentTime.MonthToString() << L" " << currentTime.ToStringHM() << L" --\033[23m\n";
+    std::cout << "\033[3m-- " << currentTime.WeekDayToString() << " " << currentTime.m_day << " " << currentTime.MonthToString() << " " << currentTime.ToStringHM() << " --\033[23m\n";
 }
 
 int main(int argc, char** argv) {
@@ -113,10 +106,11 @@ int main(int argc, char** argv) {
     // enable colors
     (void)GetConsoleMode(console, &originalConsoleMode);
     (void)SetConsoleMode(console, originalConsoleMode | (DWORD)ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-#endif
-    (void)_setmode(_fileno(stdout), _O_U16TEXT);
 
-    std::wcout << L"[ https://www.livechart.me/timetable | kachi ]\n";
+    (void)SetConsoleOutputCP(CP_UTF8);
+#endif
+
+    std::cout << "[ https://www.livechart.me/timetable | kachi ]\n";
 
     auto currentTime = NOW;
     bool isDifferent = false;
@@ -138,7 +132,7 @@ int main(int argc, char** argv) {
 
     auto content = LiveChartScraper::GetRawPageContentForDay(currentTime);
     if (content.empty()) {
-        std::wcout << "Failed to get data";
+        std::cout << "Failed to get data";
 #ifdef _WIN32
         (void)SetConsoleMode(console, originalConsoleMode);
 #endif
@@ -151,7 +145,7 @@ int main(int argc, char** argv) {
 
     if (isDifferent) {
         hasPrintCurrentTime = true;
-        std::wcout << L"\033[3m-- " << currentTime.m_day << L" " << currentTime.MonthToString() << L" --\033[23m\n";
+        std::cout << "\033[3m-- " << currentTime.m_day << " " << currentTime.MonthToString() << " --\033[23m\n";
     }
 
     for (const auto& entry : entries) {
@@ -160,7 +154,7 @@ int main(int argc, char** argv) {
             DrawCursor(currentTime);
         }
 
-        std::wcout << LiveChartScraper::FormatEntry(entry) + L"\n";
+        std::cout << LiveChartScraper::FormatEntry(entry) + "\n";
     }
 
     if (!hasPrintCurrentTime)
