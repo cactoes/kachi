@@ -1,2 +1,6 @@
+# cmake stuff
 build/
+
+# editors
 .vs/
+.vscode

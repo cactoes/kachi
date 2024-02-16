@@ -5,14 +5,26 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ================
+# main
+# ================
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/cpp-html-parser)
-
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
+# ================
+# submodule: cpp httplib
+# ================
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/cpp-httplib)
+
+# ================
+# submodule: cpp html parser
+# ================
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/cpp-html-parser)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpp-html-parser)
 
+# ================
+# library: OpenSSL (v3)
+# ================
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
