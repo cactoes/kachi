@@ -15,12 +15,11 @@
 namespace LiveChartScraper {
     std::string GetRawPageContentForDay(const Time& time) {
         httplib::Client client("https://www.livechart.me");
-        auto result = client.Get("/timetable?date=" + time.ToYearMonthDayString("-"));
+        auto result = client.Get("/schedule?date=" + time.ToYearMonthDayString("-"));
 
         if (result->status != 200)
             return "";
 
-        // return StringToWideString(result->body);
         return result->body;
     }
 
@@ -39,41 +38,63 @@ namespace LiveChartScraper {
 
     std::vector<AnimeEntry> GetEntriesFor(const std::string& content, size_t day) {
         auto document = parser::ParseHTML(content);
-        auto elements = document.GetElementsByClassName("timetable-day");
+        auto elements = document.GetElementsByClassName("lc-timetable-day");
 
         std::vector<AnimeEntry> entries;
 
         if (elements.size() < 1)
             return entries;
 
-        for (const auto& element : elements.at(day)->GetElementsByClassName("timetable-timeslot")) {
-            AnimeEntry entry;
-            entry.m_time = Time(element->attributes.at("data-timestamp"));
+        for (const auto& slot : elements.at(day)->GetElementsByClassName("lc-timetable-timeslot")) {
+            if (slot->attributes.at("data-controller") == "current-time")
+                continue;
 
-            bool isTypeMessage = !element->GetElementsByClassName("timetable-timeslot__note").empty();
-            if (isTypeMessage) {
-                entry.m_type = AnimeEntryType::MESSAGE;
+            auto slotTime = Time(slot->attributes.at("data-timestamp"));
 
-                for (const auto& child : element->GetElementsByTagName("p").at(0)->children) {
-                    if (child.children.empty()) {
-                        entry.m_message += child.inner;
-                    } else {
-                        entry.m_message += "\033[3m\033[1m" + child.children.at(0).inner + "\033[22m\033[23m";
-                    }
-                }
+            auto contentBlock = slot->GetElementsByClassName("lc-timetable-timeslot__content").at(0);
 
-            } else {
-                if (!element->GetElementsByClassName("footer").empty()) {
-                    entry.m_episode = element->GetElementsByClassName("footer").at(0)->children.at(1).inner;
-                    entry.m_title = element->GetElementsByClassName("title").at(0)->children.at(0).inner;
-                    entry.m_type = AnimeEntryType::BASIC;
+            auto animeBlocks = contentBlock->GetElementsByClassName("lc-timetable-anime-block");
+            for (const auto& block : animeBlocks) {
+                AnimeEntry entry;
+                entry.m_type = AnimeEntryType::BASIC;
+                entry.m_time = slotTime;
+                entry.m_title = block->GetElementsByClassName("lc-tt-anime-title").at(0)->children.at(0).inner;
+                
+                auto releaseLabel = block->GetElementsByClassName("lc-tt-release-label").at(0);
+                if (releaseLabel->children.size() == 2) {
+                    entry.m_episode = releaseLabel->children.at(0).children.at(0).inner; // actual episode
                 } else {
-                    entry.m_message = element->GetElementsByTagName("p").at(0)->children.at(0).inner;
-                    entry.m_type = AnimeEntryType::MESSAGE;
+                    // entry.m_episode = releaseLabel->children.at(0).inner; // other info
+                    entry.m_episode = "EP?";
+                }
+                
+                entries.push_back(entry);
+            }
+
+            auto noteBlock = contentBlock->GetElementsByClassName("lc-timetable-timeslot__note");
+            if (!noteBlock.empty()) {
+                AnimeEntry entry;
+                entry.m_type = AnimeEntryType::MESSAGE;
+                entry.m_time = slotTime;
+                entry.m_title = noteBlock.at(0)->GetElementsByClassName("lc-timetable-timeslot__note__anime-title").at(0)->children.at(0).inner;
+
+                for (auto& message : noteBlock.at(0)->children.at(4).children) {
+                    if (message.children.empty())
+                        continue;
+
+                    entry.m_message = message.children.at(0).inner;
+                    entries.push_back(entry);
                 }
             }
 
-            entries.push_back(entry);
+            if (animeBlocks.empty() && noteBlock.empty()) {
+                AnimeEntry entry;
+                entry.m_type = AnimeEntryType::MESSAGE;
+                entry.m_time = slotTime;
+                entry.m_title = contentBlock->children.at(0).children.at(0).inner;
+                entry.m_message = contentBlock->children.at(2).children.at(0).inner;
+                entries.push_back(entry);
+            }
         }
 
         return entries;
@@ -86,7 +107,7 @@ namespace LiveChartScraper {
                 ss << "[" << entry.m_time.ToStringHM() << "] [" << std::left << std::setw(6) << entry.m_episode << "] " << entry.m_title;
                 return ss.str();
             case AnimeEntryType::MESSAGE:
-                ss << "-- " << entry.m_message << " (" + entry.m_time.ToStringHM() + ") --";
+                ss << "-- "<< "(" + entry.m_time.ToStringHM() + ") " << "\033[3m\033[1m" << entry.m_title << "\033[22m\033[23m " << entry.m_message << " --";
                 return ss.str();
             default:
                 return ss.str();
@@ -110,7 +131,7 @@ int main(int argc, char** argv) {
     (void)SetConsoleOutputCP(CP_UTF8);
 #endif
 
-    std::cout << "[ https://www.livechart.me/timetable | kachi ]\n";
+    std::cout << "[ https://www.livechart.me/schedule | kachi ]\n";
 
     auto currentTime = NOW;
     bool isDifferent = false;
