@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 #include <htmlparser.hpp>
+#include <ranges>
 
 #ifdef _WIN32
 #include "Windows.h"
@@ -45,8 +46,11 @@ namespace LiveChartScraper {
         if (elements.size() < 1)
             return entries;
 
-        for (const auto& slot : elements.at(day)->GetElementsByClassName("lc-timetable-timeslot")) {
+        for (auto& slot : elements.at(day)->GetElementsByClassName("lc-timetable-timeslot")) {
             if (slot->attributes.at("data-controller") == "current-time")
+                continue;
+
+            if (std::ranges::find(slot->classList, "hidden") != slot->classList.end())
                 continue;
 
             auto slotTime = Time(slot->attributes.at("data-timestamp"));
