@@ -1,6 +1,9 @@
 ## kachi
 A console version of [https://www.livechart.me/schedule](https://www.livechart.me/schedule).
 
+> [!IMPORTANT]  
+> Currently no longer working
+
 ## options
 ### specify a time
 ```bash
